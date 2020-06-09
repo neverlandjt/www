@@ -3,6 +3,7 @@ from json import dumps, loads
 import requests
 
 
+
 def publish_message(producer_instance, topic_name, value):
     try:
         producer_instance.send(topic_name, value=value)
@@ -13,10 +14,10 @@ def publish_message(producer_instance, topic_name, value):
         print(str(ex))
 
 
-def connect_kafka_producer(addr='172.31.87.124:9092'):
+def connect_kafka_producer(addr=['172.31.87.124:9092']):
     producer = None
     try:
-        producer = KafkaProducer(bootstrap_servers=[addr],
+        producer = KafkaProducer(bootstrap_servers=addr,
                                  value_serializer=lambda x:
                                  dumps(x).encode('utf-8'))
     except Exception as ex:
@@ -27,10 +28,10 @@ def connect_kafka_producer(addr='172.31.87.124:9092'):
 
 
 if __name__ == '__main__':
-    topic = 'streamed'
+    topic = 'wiki'
     kafka_producer = connect_kafka_producer()
-    stream_link = 'http://stream.meetup.com/2/rsvps'
     print('Producer connected...')
+    stream_link = 'https://stream.wikimedia.org/v2/stream/page-create'
     print('Load data...')
     try:
         r = requests.get(stream_link, stream=True)
@@ -38,9 +39,20 @@ if __name__ == '__main__':
         if r.encoding is None:
             r.encoding = 'utf-8'
 
+        cnt, event = 0, ''
         for line in r.iter_lines(decode_unicode=True):
             if line:
-                publish_message(kafka_producer, topic, loads(line))
+                split = line.split()
+                cnt += 1
+                if split[0] == 'event:':
+                    event += '{"event" :' + f'"{split[1]}"'
+                if split[0] == 'id:':
+                    event += ',"id":' + " ".join(split[1:])
+                elif split[0] == 'data:':
+                    event += ',"data":' + " ".join(split[1:]) + "}"
+                if cnt == 4:
+                    publish_message(kafka_producer, topic, loads(event))
+                    cnt, event = 1, ''
 
     except KeyboardInterrupt:
         print("Close connection...")
