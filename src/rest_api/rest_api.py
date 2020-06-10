@@ -25,6 +25,11 @@ session.set_keyspace('project')
 cluster.connect()
 
 
+"""""""""""""""""""""""""""""""""""
+"          AD HOC QUERIES          "
+"""""""""""""""""""""""""""""""""""
+
+
 @blp.route('/pages', methods=["GET"], strict_slashes=False)
 @blp.arguments(PageByIdArgs, location='query')
 @blp.response(PageByIdResponse(many=False),
@@ -35,8 +40,10 @@ cluster.connect()
                   'title': 'Modul:ConvertNumeric',
                   'namespace': 828
               })
+@blp.response(code=422, description="Page ID is invalid.")
+@blp.response(code=404, description="Page is not found.")
 def get_page_by_id(_):
-    """Get the the info about specified page_id
+    """Get the info about specified page_id
 
     Return the information about page
     """
@@ -128,6 +135,7 @@ def get_number_of_pages_by_user_id(_):
                   'name': 'username1',
                   'number_of_pages': 2
               })
+@blp.response(code=422, description="Date is invalid.")
 def get_users_stats_by_date(_):
     """Get the the info about users who created at least one page in a specified time range.
 
@@ -162,6 +170,69 @@ def get_users_stats_by_date(_):
                     user in users]).most_common()]
 
     return jsonify(results)
+
+
+"""""""""""""""""""""""""""""""""""
+"           STATISTICS            "
+"""""""""""""""""""""""""""""""""""
+
+
+@blp.route('/stats/pages_by_domains', methods=["GET"])
+@blp.response(CreatedPagesDomainsResponse(many=True),
+              description="Return the aggregated statistics containing the number of created "
+                          "pages for each Wikipedia domain for each hour in the last 6 hours.",
+              example={
+                  'time_start': '12:00',
+                  'time_end': '13:00',
+                  'statistics': [{'fr.wikisource.org': 342}]
+              })
+def get_created_pages_stats_by_domain():
+    """Get the statistics for each domain containing the number of created pages
+
+    Return the statistics for domain
+    """
+    stats = session.execute("select * from pages_by_domain limit 6")
+    stats = {name: (getattr(stats, name)) for name in stats._fields}
+    return jsonify(stats)
+
+
+@blp.route('/stats/pages_by_bots', methods=["GET"])
+@blp.response(CreatedPagesBotsResponse(many=True),
+              description="Return the statistics about the number of pages created by bots for each of "
+                          "the domains for the last 6 hours.",
+              example={
+                  'time_start': '12:00',
+                  'time_end': '13:00',
+                  'statistics': [{'domain': 'fr.wikisource.org', 'created_by_bots': 312}]
+              })
+def get_created_pages_stats_by_domain():
+    """Get the statistics of pages that were created by bots
+
+    Return the statistics for each domain
+    """
+    stats = session.execute("select * from pages_by_domain limit 6")
+    stats = {name: (getattr(stats, name)) for name in stats._fields}
+    return jsonify(stats)
+
+
+@blp.route('/stats/users_by_pages', methods=["GET"])
+@blp.response(UsersByPagesResponse(many=True),
+              description="Return Top 20 users that created the most pages during the last 6 hours.",
+              example={
+                  'user_id': 1,
+                  'user_name': 'user1',
+                  'time_start': '12:00',
+                  'time_end': '13:00',
+                  'page_titles': ['fr.wikisource.org']
+              })
+def get_created_pages_stats_by_domain():
+    """Get the statistics for each domain containing the number of created pages
+
+    Return the statistics for domain
+    """
+    stats = session.execute("select * from pages_by_domain limit 20")
+    stats = {name: (getattr(stats, name)) for name in stats._fields}
+    return jsonify(stats)
 
 
 api.register_blueprint(blp)
