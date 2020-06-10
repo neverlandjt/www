@@ -8,6 +8,7 @@ CREATE TABLE project.users
     name        text,
     page_id     bigint,
     timestamp   timestamp,
+
     PRIMARY KEY ((id), timestamp)
 );
 
