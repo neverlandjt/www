@@ -62,6 +62,7 @@ def get_existing_domains():
     Return the list of domains
     """
     domains = list(session.execute("select domain from pages"))
+    domains = [x.domain for x in domains]
     return jsonify(domains)
 
 
@@ -80,10 +81,11 @@ def get_pages_by_user(_):
     if not user_id:
         abort(422, message='User id must be not null.')
 
-    pages = list(session.execute("select page_id from users where id = %s", (user_id,)))
+    pages = session.execute("select page_id from users where id = %s", (user_id,))
     if not pages:
         return abort(404, message=f'User with id={user_id} not found')
 
+    pages = [x.page_id for x in pages]
     return jsonify(pages)
 
 
@@ -105,11 +107,15 @@ def get_number_of_pages_by_user_id(_):
     if not domain:
         abort(422, message='Domain must be not null.')
 
-    domains = list(session.execute("select page_id from pages where domain = %s", (domain,)))
+    domains = session.execute("select domain from pages", (domain,))
+
     if not domains:
         abort(404, message=f'Domain {domain} not found')
 
-    return jsonify(domains)
+    result = [{'domain': x, 'number_of_pages': y} for x, y in
+              Counter([review.customer_id for review in domains]).most_common()]
+
+    return jsonify(result)
 
 
 @blp.route('/users', methods=["GET"])
@@ -159,6 +165,7 @@ def get_users_stats_by_date(_):
 
 
 api.register_blueprint(blp)
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=80, debug=True)
