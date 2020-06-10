@@ -15,9 +15,9 @@ metaSchema = StructType([
 
 performerSchema = StructType([
     StructField("user_text", StringType(), True),
-    StructField("user_groups", ArrayType(), True),
+    StructField("user_groups", ArrayType(StringType()), True),
     StructField("user_is_bot", BooleanType(), True),
-    StructField("user_id", StringType(), True),
+    StructField("user_id", LongType(), True),
     StructField("user_registration_dt", StringType(), True),
     StructField("user_edit_count", LongType(), True)
 ])

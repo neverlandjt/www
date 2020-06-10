@@ -11,7 +11,7 @@ CREATE TABLE project.users
     PRIMARY KEY ((id), timestamp)
 );
 
-CREATE TABLE project.customer_reviews
+CREATE TABLE project.pages
 (
     id          bigint,
     url         text,
