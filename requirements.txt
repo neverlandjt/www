@@ -1,2 +1,6 @@
 requests
 kafka-python
+Flask
+marshmallow
+flask_rest_api
+webargs==5.4.0
