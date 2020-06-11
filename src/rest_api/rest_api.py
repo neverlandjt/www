@@ -24,6 +24,7 @@ session.set_keyspace('project')
 
 cluster.connect()
 
+
 """""""""""""""""""""""""""""""""""
 "          AD HOC QUERIES         "
 """""""""""""""""""""""""""""""""""
@@ -47,12 +48,13 @@ def get_page_by_id(_):
     Return the information about page
     """
     page_id = request.args.get('page_id')
-    if not page_id:
-        abort(422, message='Page ID must be not null.')
+    if not isinstance(page_id, int):
+        abort(422, message='Invalid value for field page ID: "%s"' % page_id)
 
+    page_id = int(page_id)
     page = session.execute("select url, title, namespace from pages where id = %s", (page_id,))
     if not page:
-        abort(404, f'Page with ID = {page} not found')
+        abort(404, f'Page with ID = {page_id} not found')
 
     page = {name: (getattr(page, name)) for name in page._fields}
     return jsonify(page)
@@ -84,9 +86,11 @@ def get_pages_by_user(_):
 
     Return the list of pages id"""
     user_id = request.args.get('user_id')
-    if not user_id:
-        abort(422, message='User id must be not null.')
 
+    if not isinstance(user_id, int):
+        abort(422, message='Invalid value for field user ID: "%s"' % user_id)
+
+    user_id = int(user_id)
     pages = session.execute("select page_id from users where id = %s", (user_id,))
     if not pages:
         return abort(404, message=f'User with id={user_id} not found')
@@ -147,17 +151,17 @@ def get_users_stats_by_date(_):
         except ValueError:
             return None
 
-    start = request.args.get('start', datetime.combine(date.today(), time.min))
-    end = request.args.get('end', datetime.now())
+    start = request.args.get('start')
+    end = request.args.get('end')
 
     start = datetime.combine(date.today(), time.min) if not start else validate_date(start)
-    end = datetime.now() if end else validate_date(end)
+    end = datetime.now() if not end else validate_date(end)
 
     if not any([start, end]):
         abort(422, message=f'"{start if not start else end}" is not a correct value for date.')
 
-    start = start.timestamp()
-    end = end.timestamp()
+    start = int(start.timestamp())
+    end = int(end.timestamp())
 
     users = session.execute("select id, name, page_id, timestamp from users where timestamp >= %s and timestamp <= %s "
                             "allow filtering;",
@@ -190,8 +194,8 @@ def get_created_pages_stats_by_domain():
 
     Return the statistics for domain
     """
-    stats = session.execute("select * from pages_by_domain limit 6")
-    stats = {name: (getattr(stats, name)) for name in stats._fields}
+    stats = session.execute("select * from stats_domains limit 6")
+    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
     return jsonify(stats)
 
 
@@ -209,8 +213,8 @@ def get_created_pages_stats_by_domain():
 
     Return the statistics for each domain
     """
-    stats = session.execute("select * from pages_by_domain limit 6")
-    stats = {name: (getattr(stats, name)) for name in stats._fields}
+    stats = session.execute("select * from stats_created_pages limit 6")
+    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
     return jsonify(stats)
 
 
@@ -232,8 +236,8 @@ def get_top_users():
 
     Return the statistics for domain
     """
-    stats = session.execute("select * from pages_by_domain limit 20")
-    stats = {name: (getattr(stats, name)) for name in stats._fields}
+    stats = session.execute("select * from stats_users limit 20")
+    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
     return jsonify(stats)
 
 
