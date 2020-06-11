@@ -40,18 +40,7 @@ create table if not exists project.stats_created_pages
 
 create type custom_stats_bots (domain text, created_by_bots bigint);
 
-create table if not exists project.stats_bots
-(
-    time_start text,
-    time_end   text,
-    statistics frozen<list<custom_stats_bots>>,
-    primary key (time_start)
-);
-
-
-create type custom_stats_bots (domain text, created_by_bots bigint);
-
-create table if not exists project.stats_bots
+create table if not exists project.stats_domains
 (
     time_start text,
     time_end   text,
