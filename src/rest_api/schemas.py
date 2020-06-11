@@ -80,10 +80,15 @@ class CreatedPagesBotsResponse(ma.Schema):
                                 description='Number of created pages by bots for domain')
 
 
-class UsersByPagesResponse(ma.Schema):
-    time_start = ma.fields.String(description='From time')
-    time_end = ma.fields.String(description='To time')
+class UsersAndPageTitles(ma.Schema):
     user_name = ma.fields.String(description='User name')
     user_id = ma.fields.String(description='User ID')
     page_titles = ma.fields.List(ma.fields.String(description='Page title'))
     number_of_pages = ma.fields.Integer(description='Number of created pages for user')
+
+
+class UsersByPagesResponse(ma.Schema):
+    time_start = ma.fields.String(description='From time')
+    time_end = ma.fields.String(description='To time')
+    users = ma.fields.List(ma.fields.Nested(UsersAndPageTitles),
+                           description='Information about top 20 users that created most pages')
