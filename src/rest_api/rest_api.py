@@ -24,7 +24,6 @@ session.set_keyspace('project')
 
 cluster.connect()
 
-
 """""""""""""""""""""""""""""""""""
 "          AD HOC QUERIES         "
 """""""""""""""""""""""""""""""""""
@@ -219,14 +218,17 @@ def get_created_pages_stats_by_domain():
 @blp.response(UsersByPagesResponse(many=True),
               description="Return Top 20 users that created the most pages during the last 6 hours.",
               example={
-                  'user_id': 1,
-                  'user_name': 'user1',
                   'time_start': '12:00',
                   'time_end': '13:00',
-                  'page_titles': ['fr.wikisource.org']
+                  'users': [{
+                      'user_id': 1,
+                      'user_name': 'user1',
+                      'number_of_pages': 1,
+                      'page_titles': ['fr.wikisource.org']
+                  }]
               })
-def get_created_pages_stats_by_domain():
-    """Get the statistics for each domain containing the number of created pages
+def get_top_users():
+    """Get the statistics for top 20 users that created the most pages
 
     Return the statistics for domain
     """
@@ -239,5 +241,5 @@ api.register_blueprint(blp)
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=80, debug=True)
+    app.run(host="0.0.0.0", port=4321, debug=True)
     cluster.shutdown()
