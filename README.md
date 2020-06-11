@@ -4,8 +4,8 @@
 
 ## REST API Documentation:
 Documention can be accessed via several ways:
-* go to [link](https://app.swaggerhub.com/apis-docs/lazyTurtle21/Wiki_big_data/2) to see just Swagger UI
-* automatic generation of interactive documentation
+* go to [link](https://app.swaggerhub.com/apis-docs/lazyTurtle21/Wiki_big_data/3) to see just Swagger UI
+* automatic generation of interactive documentation where also is possible to try all the endpoints
   - run the Flask server
     ```sh
     python3 run.py
