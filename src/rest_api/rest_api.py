@@ -4,7 +4,7 @@ from flask import request, jsonify, Flask, abort
 from flask_rest_api import Api, Blueprint, abort
 from datetime import datetime, date, time
 
-from src.rest_api.rest_api_schemas import *
+from src.rest_api.schemas import *
 from src.cassandra.cluster import cluster
 
 app = Flask('API')
@@ -26,7 +26,7 @@ cluster.connect()
 
 
 """""""""""""""""""""""""""""""""""
-"          AD HOC QUERIES          "
+"          AD HOC QUERIES         "
 """""""""""""""""""""""""""""""""""
 
 
