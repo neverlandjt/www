@@ -69,8 +69,8 @@ def get_existing_domains():
     Return the list of domains
     """
     domains = list(session.execute("select domain from pages"))
-    domains = [x.domain for x in domains]
-    return jsonify(domains)
+    domains = set([x.domain for x in domains])
+    return jsonify(list(domains))
 
 
 @blp.route('/pages/user', methods=["GET"])
@@ -184,7 +184,7 @@ def get_users_stats_by_date(_):
                           "pages for each Wikipedia domain for each hour in the last 6 hours.",
               example={
                   'time_start': '12:00',
-                  'time_end': '13:00',
+                  'time_end': '18:00',
                   'statistics': [{'fr.wikisource.org': 342}]
               })
 def get_created_pages_stats_by_domain():
@@ -192,8 +192,11 @@ def get_created_pages_stats_by_domain():
 
     Return the statistics for domain
     """
-    stats = session.execute("select * from stats_domains limit 6")
-    stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
+    now = datetime.now()
+    hour = now.hour - 6
+    stats = session.execute("select * from stats_domains where time_start = %s", (str(int(hour)),))
+    stats = [{name: getattr(row, name) for name in row._fields} for row in stats][0]
+    stats['statistics'] = [{name: getattr(row, name) for name in row._fields} for row in stats['statistics']]
     return jsonify(stats)
 
 
@@ -202,8 +205,8 @@ def get_created_pages_stats_by_domain():
               description="Return the statistics about the number of pages created by bots for each of "
                           "the domains for the last 6 hours.",
               example={
-                  'time_start': '12:00',
-                  'time_end': '13:00',
+                  'time_start': '12',
+                  'time_end': '13',
                   'statistics': [{'domain': 'fr.wikisource.org', 'created_by_bots': 312}]
               })
 def get_created_pages_stats_by_domain():
@@ -213,6 +216,8 @@ def get_created_pages_stats_by_domain():
     """
     stats = session.execute("select * from stats_created_pages limit 6")
     stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
+    for user in stats:
+        user['statistics'] = [{row[0]: row[1]} for row in user['statistics']]
     return jsonify(stats)
 
 
@@ -234,8 +239,12 @@ def get_top_users():
 
     Return the statistics for domain
     """
-    stats = session.execute("select * from stats_users limit 20")
-    stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
+    now = datetime.now()
+    hour = now.hour - 6
+    stats = session.execute("select * from stats_users where time_start = %s", (str(int(hour)),))
+    if stats:
+        stats = [{name: getattr(row, name) for name in row._fields} for row in stats][0]
+        stats['users'] = [{name: getattr(row, name) for name in row._fields} for row in stats['users']]
     return jsonify(stats)
 
 

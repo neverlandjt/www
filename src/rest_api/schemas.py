@@ -16,8 +16,8 @@ class PagesByUserArgs(ma.Schema):
 
 
 class PagesByUserResponse(ma.Schema):
-    page_id = ma.fields.Integer(description='Page ID')
-    page_list = ma.fields.List(page_id, description='List of pages id for specified user_id')
+    page_ids = ma.fields.List(ma.fields.Integer(description='Page ID'),
+                              description='List of pages id for specified user_id')
 
 
 class PagesByDomainArgs(ma.Schema):
