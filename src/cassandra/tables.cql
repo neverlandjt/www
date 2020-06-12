@@ -3,6 +3,11 @@ create keyspace if not exists project with replication = {'class' : 'SimpleStrat
 use project;
 
 drop table if exists project.stats_created_pages;
+drop table if exists project.users;
+drop table if exists project.pages;
+drop table if exists project.stats_domains;
+drop table if exists project.stats_users;
+
 
 create table if not exists project.users
 (

@@ -73,7 +73,7 @@ def get_existing_domains():
     return jsonify(list(domains))
 
 
-@blp.route('/pages/user', methods=["GET"])
+@blp.route('/pages', methods=["GET"])
 @blp.arguments(PagesByUserArgs, location='query')
 @blp.response(PagesByUserResponse(many=False),
               description="Return all the pages ids which were created by the user with a specified user_id.",
@@ -118,13 +118,12 @@ def get_number_of_pages_by_user_id(_):
     if not domain:
         abort(422, message='Domain must be not null.')
 
-    domains = session.execute("select domain from pages")
+    domains = session.execute("select id from pages where domain=%s allow filtering", (domain, ))
 
     if not domains:
         abort(404, message=f'Domain {domain} not found')
 
-    result = [{'domain': x.domain, 'number_of_pages': y} for x, y in
-              Counter(domains).most_common()]
+    result = {'domain': domain, 'number_of_pages': len(domains)}
 
     return jsonify(result)
 
