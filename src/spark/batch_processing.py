@@ -35,9 +35,10 @@ if __name__ == '__main__':
     ds = df.select(from_json(col("value").cast("string"), schema).alias('value')) \
         .selectExpr('value.*').filter(bounds("meta.dt"))
 
-    first_query = ds.withColumn("hour", hour("meta.dt")).groupBy("hour", "meta.domain").agg(
-        count("meta.domain").alias('number')).orderBy(desc("number")).groupBy('hour').agg(
-        collect_list(struct(col("domain"), "number")).alias("statistics"))
+    first_query = ds.withColumn("time_start", hour("meta.dt")).groupBy("time_start", "meta.domain").agg(
+        count("meta.domain").alias('number_of_pages')).orderBy(desc("number_of_pages")).groupBy('time_start').agg(
+        collect_list(struct(col("domain"), "number_of_pages")).alias("statistics")).withColumn("time_end",
+                                                                                               col("time_start") + 1)
 
     second_query = ds.groupBy("meta.domain").agg(
         f.sum(col("performer.user_is_bot").cast('long')).alias("created_by_bot")).orderBy(desc("created_by_bot")) \
@@ -53,13 +54,4 @@ if __name__ == '__main__':
                 collect_list(struct("user_id", "user_name", "number_of_pages",
                                     "page_titles")).alias("users"))
 
-    first_result = [
-        {
-            "time_start": row.hour,
-            "time_end": row.hour + 1,
-            "statistics": [{stats["domain"]: stats["number"]} for stats in row.statistics]
-        } for row in first_query.collect()]
 
-    second_result = second_query.collect()[0].asDict(recursive=True)
-    third_result = third_query.collect()[0].asDict(recursive=True)
-    print(first_result, second_result, third_result)
