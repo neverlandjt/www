@@ -3,7 +3,7 @@ from structure import schema
 from pyspark.sql.types import StringType, BooleanType
 from pyspark.sql import SparkSession, SQLContext, Window
 from pyspark.sql.functions import col, from_json, window, month, dayofmonth, minute, hour, arrays_overlap, lit, array, \
-    to_json, udf, collect_list, struct, first, explode, count, lit, desc, dict
+    to_json, udf, collect_list, struct, first, explode, count, lit, desc
 from datetime import datetime, timedelta
 import pyspark.sql.functions as f
 

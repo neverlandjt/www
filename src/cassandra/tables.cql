@@ -29,18 +29,18 @@ create table if not exists project.pages
             with clustering order by (domain desc);
 
 
-create type custom_stats_pages (domain text, created_pages bigint);
+create type if not exists custom_stats_pages (domain text, created_pages bigint);
 
 create table if not exists project.stats_created_pages
 (
     time_start text,
     time_end   text,
-    statistics frozen<map<custom_stats_pages>>,
+    statistics frozen<list<custom_stats_pages>>,
     primary key (time_start)
 );
 
 
-create type custom_stats_bots (domain text, created_by_bots bigint);
+create type if not exists custom_stats_bots (domain text, created_by_bots bigint);
 
 create table if not exists project.stats_domains
 (
@@ -51,7 +51,7 @@ create table if not exists project.stats_domains
 );
 
 
-create type custom_stats_users (
+create type if not exists custom_stats_users (
     user_id bigint, user_name text, number_of_pages bigint, page_titles list<text>
     );
 
