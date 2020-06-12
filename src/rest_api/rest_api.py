@@ -24,7 +24,6 @@ session.set_keyspace('project')
 
 cluster.connect()
 
-
 """""""""""""""""""""""""""""""""""
 "          AD HOC QUERIES         "
 """""""""""""""""""""""""""""""""""
@@ -48,15 +47,15 @@ def get_page_by_id(_):
     Return the information about page
     """
     page_id = request.args.get('page_id')
-    if not isinstance(page_id, int):
+    if not page_id or not page_id.isdigit():
         abort(422, message='Invalid value for field page ID: "%s"' % page_id)
 
     page_id = int(page_id)
-    page = session.execute("select url, title, namespace from pages where id = %s", (page_id,))
+    page = session.execute("select id, url, title, namespace from pages where id = %s", (page_id,))
     if not page:
         abort(404, f'Page with ID = {page_id} not found')
 
-    page = {name: (getattr(page, name)) for name in page._fields}
+    page = {name: (getattr(page[0], name)) for name in page[0]._fields}
     return jsonify(page)
 
 
@@ -70,15 +69,17 @@ def get_existing_domains():
     Return the list of domains
     """
     domains = list(session.execute("select domain from pages"))
-    domains = [x.domain for x in domains]
-    return jsonify(domains)
+    domains = set([x.domain for x in domains])
+    return jsonify(list(domains))
 
 
-@blp.route('/pages/user', methods=["GET"])
+@blp.route('/pages', methods=["GET"])
 @blp.arguments(PagesByUserArgs, location='query')
 @blp.response(PagesByUserResponse(many=False),
               description="Return all the pages ids which were created by the user with a specified user_id.",
-              example=[1, 2])
+              example={
+                  'page_ids': [1, 2]}
+              )
 @blp.response(code=404, description="User not found.")
 @blp.response(code=422, description="User id cannot be null.")
 def get_pages_by_user(_):
@@ -87,7 +88,7 @@ def get_pages_by_user(_):
     Return the list of pages id"""
     user_id = request.args.get('user_id')
 
-    if not isinstance(user_id, int):
+    if not user_id or not user_id.isdigit():
         abort(422, message='Invalid value for field user ID: "%s"' % user_id)
 
     user_id = int(user_id)
@@ -95,7 +96,7 @@ def get_pages_by_user(_):
     if not pages:
         return abort(404, message=f'User with id={user_id} not found')
 
-    pages = [x.page_id for x in pages]
+    pages = {'pages_ids': [x.page_id for x in pages]}
     return jsonify(pages)
 
 
@@ -117,13 +118,12 @@ def get_number_of_pages_by_user_id(_):
     if not domain:
         abort(422, message='Domain must be not null.')
 
-    domains = session.execute("select domain from pages", (domain,))
+    domains = session.execute("select id from pages where domain=%s allow filtering", (domain, ))
 
     if not domains:
         abort(404, message=f'Domain {domain} not found')
 
-    result = [{'domain': x, 'number_of_pages': y} for x, y in
-              Counter([review.customer_id for review in domains]).most_common()]
+    result = {'domain': domain, 'number_of_pages': len(domains)}
 
     return jsonify(result)
 
@@ -160,9 +160,6 @@ def get_users_stats_by_date(_):
     if not any([start, end]):
         abort(422, message=f'"{start if not start else end}" is not a correct value for date.')
 
-    start = int(start.timestamp())
-    end = int(end.timestamp())
-
     users = session.execute("select id, name, page_id, timestamp from users where timestamp >= %s and timestamp <= %s "
                             "allow filtering;",
                             (start, end))
@@ -186,7 +183,7 @@ def get_users_stats_by_date(_):
                           "pages for each Wikipedia domain for each hour in the last 6 hours.",
               example={
                   'time_start': '12:00',
-                  'time_end': '13:00',
+                  'time_end': '18:00',
                   'statistics': [{'fr.wikisource.org': 342}]
               })
 def get_created_pages_stats_by_domain():
@@ -194,8 +191,11 @@ def get_created_pages_stats_by_domain():
 
     Return the statistics for domain
     """
-    stats = session.execute("select * from stats_domains limit 6")
-    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
+    now = datetime.now()
+    hour = now.hour - 6
+    stats = session.execute("select * from stats_domains where time_start = %s", (str(int(hour)),))
+    stats = [{name: getattr(row, name) for name in row._fields} for row in stats][0]
+    stats['statistics'] = [{name: getattr(row, name) for name in row._fields} for row in stats['statistics']]
     return jsonify(stats)
 
 
@@ -204,8 +204,8 @@ def get_created_pages_stats_by_domain():
               description="Return the statistics about the number of pages created by bots for each of "
                           "the domains for the last 6 hours.",
               example={
-                  'time_start': '12:00',
-                  'time_end': '13:00',
+                  'time_start': '12',
+                  'time_end': '13',
                   'statistics': [{'domain': 'fr.wikisource.org', 'created_by_bots': 312}]
               })
 def get_created_pages_stats_by_domain():
@@ -214,7 +214,9 @@ def get_created_pages_stats_by_domain():
     Return the statistics for each domain
     """
     stats = session.execute("select * from stats_created_pages limit 6")
-    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
+    stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
+    for user in stats:
+        user['statistics'] = [{row[0]: row[1]} for row in user['statistics']]
     return jsonify(stats)
 
 
@@ -223,7 +225,7 @@ def get_created_pages_stats_by_domain():
               description="Return Top 20 users that created the most pages during the last 6 hours.",
               example={
                   'time_start': '12:00',
-                  'time_end': '13:00',
+                  'time_end': '18:00',
                   'users': [{
                       'user_id': 1,
                       'user_name': 'user1',
@@ -236,13 +238,16 @@ def get_top_users():
 
     Return the statistics for domain
     """
-    stats = session.execute("select * from stats_users limit 20")
-    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
+    now = datetime.now()
+    hour = now.hour - 6
+    stats = session.execute("select * from stats_users where time_start = %s", (str(int(hour)),))
+    if stats:
+        stats = [{name: getattr(row, name) for name in row._fields} for row in stats][0]
+        stats['users'] = [{name: getattr(row, name) for name in row._fields} for row in stats['users']]
     return jsonify(stats)
 
 
 api.register_blueprint(blp)
-
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=4321, debug=True)

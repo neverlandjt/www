@@ -2,8 +2,12 @@ create keyspace if not exists project with replication = {'class' : 'SimpleStrat
 
 use project;
 
+drop table if exists project.stats_created_pages;
 drop table if exists project.users;
 drop table if exists project.pages;
+drop table if exists project.stats_domains;
+drop table if exists project.stats_users;
+
 
 create table if not exists project.users
 (
@@ -29,16 +33,19 @@ create table if not exists project.pages
 )
             with clustering order by (domain desc);
 
+
+create type if not exists custom_stats_pages (domain text, created_pages bigint);
+
 create table if not exists project.stats_created_pages
 (
     time_start text,
     time_end   text,
-    statistics map<text,bigint>,
+    statistics frozen<list<custom_stats_pages>>,
     primary key (time_start)
 );
 
 
-create type custom_stats_bots (domain text, created_by_bots bigint);
+create type if not exists custom_stats_bots (domain text, created_by_bots bigint);
 
 create table if not exists project.stats_domains
 (
@@ -49,7 +56,7 @@ create table if not exists project.stats_domains
 );
 
 
-create type custom_stats_users (
+create type if not exists custom_stats_users (
     user_id bigint, user_name text, number_of_pages bigint, page_titles list<text>
     );
 

@@ -36,14 +36,14 @@ if __name__ == '__main__':
         .selectExpr('value.*').filter(bounds("meta.dt"))
 
     first_query = ds.withColumn("time_start", hour("meta.dt")).groupBy("time_start", "meta.domain").agg(
-        count("meta.domain").alias('number_of_pages')).orderBy(desc("number_of_pages")).groupBy('time_start').agg(
-        collect_list(struct(col("domain"), "number_of_pages")).alias("statistics")).withColumn("time_end",
-                                                                                               col("time_start") + 1)
+        count("meta.domain").alias('created_pages')).orderBy(desc("created_pages")).groupBy('time_start').agg(
+        collect_list(struct(col("domain"), "created_pages")).alias("statistics")).withColumn(
+        "time_end", col("time_start") + 1)
 
     second_query = ds.groupBy("meta.domain").agg(
-        f.sum(col("performer.user_is_bot").cast('long')).alias("created_by_bot")).orderBy(desc("created_by_bot")) \
+        f.sum(col("performer.user_is_bot").cast('long')).alias("created_by_bots")).orderBy(desc("created_by_bots")) \
         .select(lit(lower.hour).alias("time_start"), lit(upper.hour).alias("time_end"),
-                collect_list(struct(col("domain"), col("created_by_bot"))).alias('statistics'))
+                collect_list(struct(col("domain"), col("created_by_bots"))).alias('statistics'))
 
     third_query = ds.select(col("performer.user_id").alias("user_id"),
                             col("performer.user_text").alias("user_name"), "page_title").groupBy("user_id") \
@@ -54,4 +54,17 @@ if __name__ == '__main__':
                 collect_list(struct("user_id", "user_name", "number_of_pages",
                                     "page_titles")).alias("users"))
 
+    first_query.write.format("org.apache.spark.sql.cassandra") \
+        .options(keyspace='project', table='stats_created_pages') \
+        .mode('append') \
+        .save()
 
+    second_query.write.format("org.apache.spark.sql.cassandra") \
+        .options(keyspace='project', table='stats_domains') \
+        .mode('append') \
+        .save()
+
+    third_query.write.format("org.apache.spark.sql.cassandra") \
+        .options(keyspace='project', table='stats_users') \
+        .mode('append') \
+        .save()

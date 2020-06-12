@@ -2,9 +2,12 @@
 
 > Big data project that uses data from Wikipedia stream
 
+## System documentation
+go to directory /docs to see all documentation
+
 ## REST API Documentation:
 Documention can be accessed via several ways:
-* go to [link](https://app.swaggerhub.com/apis-docs/lazyTurtle21/Wiki_big_data/3) to see just Swagger UI
+* go to [link](https://app.swaggerhub.com/apis-docs/lazyTurtle21/Wiki_big_data/4) to see just Swagger UI
 * automatic generation of interactive documentation where also is possible to try all the endpoints
   - run the Flask server
     ```sh
