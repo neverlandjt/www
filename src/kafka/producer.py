@@ -13,7 +13,7 @@ def publish_message(producer_instance, topic_name, value):
         print(str(ex))
 
 
-def connect_kafka_producer(addr=['172.31.87.124:9092']):
+def connect_kafka_producer(addr=['172.31.64.180:9092']):
     producer = None
     try:
         producer = KafkaProducer(bootstrap_servers=addr,

@@ -6,7 +6,7 @@ from pyspark.sql.functions import col, from_json, window, month, dayofmonth, min
     to_json, udf, collect_list, struct
 
 if __name__ == '__main__':
-    kafka_hosts = "172.31.94.78:9092,172.31.84.93:9092,172.31.87.124:9092"
+    kafka_hosts = "172.31.64.180:9092,172.31.70.161:9092,172.31.64.76:9092"
     cassandra_cluster = '172.31.35.107'
     spark = SparkSession.builder.appName('WikiApp').config('spark.cassandra.connection.host', cassandra_cluster) \
         .config("spark.cassandra.auth.username", "cassandra") \

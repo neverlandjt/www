@@ -5,7 +5,7 @@ metaSchema = StructType([
     StructField("uri", StringType(), True),
     StructField("request_id", StringType(), True),
     StructField("id", StringType(), True),
-    StructField("dt", StringType(), True),
+    StructField("dt", TimestampType(), True),
     StructField("domain", StringType(), True),
     StructField("stream", StringType(), True),
     StructField("topic", StringType(), True),
@@ -18,7 +18,7 @@ performerSchema = StructType([
     StructField("user_groups", ArrayType(StringType()), True),
     StructField("user_is_bot", BooleanType(), True),
     StructField("user_id", LongType(), True),
-    StructField("user_registration_dt", StringType(), True),
+    StructField("user_registration_dt", TimestampType(), True),
     StructField("user_edit_count", LongType(), True)
 ])
 
