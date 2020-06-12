@@ -3,7 +3,7 @@ from structure import schema
 from pyspark.sql.types import StringType, BooleanType
 from pyspark.sql import SparkSession, SQLContext, Window
 from pyspark.sql.functions import col, from_json, window, month, dayofmonth, minute, hour, arrays_overlap, lit, array, \
-    to_json, udf, collect_list, struct, first, explode, count, lit, desc
+    to_json, udf, collect_list, struct, first, explode, count, lit, desc, dict
 from datetime import datetime, timedelta
 import pyspark.sql.functions as f
 
@@ -35,14 +35,15 @@ if __name__ == '__main__':
     ds = df.select(from_json(col("value").cast("string"), schema).alias('value')) \
         .selectExpr('value.*').filter(bounds("meta.dt"))
 
-    first_query = ds.withColumn("hour", hour("meta.dt")).groupBy("hour", "meta.domain").agg(
-        count("meta.domain").alias('number')).orderBy(desc("number")).groupBy('hour').agg(
-        collect_list(struct(col("domain"), "number")).alias("statistics"))
+    first_query = ds.withColumn("time_start", hour("meta.dt")).groupBy("time_start", "meta.domain").agg(
+        count("meta.domain").alias('created_pages')).orderBy(desc("created_pages")).groupBy('time_start').agg(
+        collect_list(struct(col("domain"), "created_pages")).alias("statistics")).withColumn(
+        "time_end", col("time_start") + 1)
 
     second_query = ds.groupBy("meta.domain").agg(
-        f.sum(col("performer.user_is_bot").cast('long')).alias("created_by_bot")).orderBy(desc("created_by_bot")) \
+        f.sum(col("performer.user_is_bot").cast('long')).alias("created_by_bots")).orderBy(desc("created_by_bots")) \
         .select(lit(lower.hour).alias("time_start"), lit(upper.hour).alias("time_end"),
-                collect_list(struct(col("domain"), col("created_by_bot"))).alias('statistics'))
+                collect_list(struct(col("domain"), col("created_by_bots"))).alias('statistics'))
 
     third_query = ds.select(col("performer.user_id").alias("user_id"),
                             col("performer.user_text").alias("user_name"), "page_title").groupBy("user_id") \
@@ -53,13 +54,17 @@ if __name__ == '__main__':
                 collect_list(struct("user_id", "user_name", "number_of_pages",
                                     "page_titles")).alias("users"))
 
-    first_result = [
-        {
-            "time_start": row.hour,
-            "time_end": row.hour + 1,
-            "statistics": [{stats["domain"]: stats["number"]} for stats in row.statistics]
-        } for row in first_query.collect()]
+    first_query.write.format("org.apache.spark.sql.cassandra") \
+        .options(keyspace='project', table='stats_created_pages') \
+        .mode('append') \
+        .save()
 
-    second_result = second_query.collect()[0].asDict(recursive=True)
-    third_result = third_query.collect()[0].asDict(recursive=True)
-    print(first_result, second_result, third_result)
+    second_query.write.format("org.apache.spark.sql.cassandra") \
+        .options(keyspace='project', table='stats_domains') \
+        .mode('append') \
+        .save()
+
+    third_query.write.format("org.apache.spark.sql.cassandra") \
+        .options(keyspace='project', table='stats_users') \
+        .mode('append') \
+        .save()

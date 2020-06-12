@@ -193,7 +193,7 @@ def get_created_pages_stats_by_domain():
     Return the statistics for domain
     """
     stats = session.execute("select * from stats_domains limit 6")
-    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
+    stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
     return jsonify(stats)
 
 
@@ -212,7 +212,7 @@ def get_created_pages_stats_by_domain():
     Return the statistics for each domain
     """
     stats = session.execute("select * from stats_created_pages limit 6")
-    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
+    stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
     return jsonify(stats)
 
 
@@ -235,7 +235,7 @@ def get_top_users():
     Return the statistics for domain
     """
     stats = session.execute("select * from stats_users limit 20")
-    stats = [{name: (getattr(stats, name)) for name in row._fields} for row in stats]
+    stats = [{name: getattr(row, name) for name in row._fields} for row in stats]
     return jsonify(stats)
 
 
