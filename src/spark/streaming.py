@@ -13,6 +13,7 @@ if __name__ == '__main__':
         .config("spark.cassandra.auth.password", "cassandra").getOrCreate()
 
     spark.conf.set('spark.sql.streaming.checkpointLocation', '/home/ubuntu/checkpoint')
+    spark.conf.set('spark.cassandra.output.ignoreNulls', 'true')
 
     mtime_to_date = udf(lambda date: time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(date / 1000)), StringType())
 
@@ -29,7 +30,7 @@ if __name__ == '__main__':
         .selectExpr('timestamp', ' value.*')
 
     users_query = ds.select(col("performer.user_id").alias("id"), col("performer.user_text").alias("name"),
-                            col("page_id"), col("timestamp")) \
+                            col("page_id"), col("timestamp")).filter("id is not null") \
         .writeStream \
         .format("org.apache.spark.sql.cassandra") \
         .options(keyspace='project', table='users') \
